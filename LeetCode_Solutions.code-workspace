@@ -3,10 +3,6 @@
 		{
 			"name": "LeetCode_Solutions",
 			"path": "."
-		},
-		{
-			"name": "SQL_50",
-			"path": "../LeetCode_Solution/SQL_50"
 		}
 	],
 	"settings": {}
