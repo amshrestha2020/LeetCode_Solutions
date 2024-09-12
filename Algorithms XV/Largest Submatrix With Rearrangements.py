@@ -53,4 +53,4 @@ class Solution:
             for j in range(cols):
                 max_area = max(max_area, sorted_row[j] * (j + 1))
 
-        return max_area        
+        return max_area       
