@@ -46,36 +46,86 @@ Each arrivali time is distinct.
 
 
 
+class MinHeap:
+    def __init__(self):
+        self.heap = []
+
+    def get_parent_index(self, index):
+        return (index - 1) // 2
+
+    def swap(self, frm, to):
+        self.heap[frm], self.heap[to] = self.heap[to], self.heap[frm]
+
+    def get_child_indexes(self, index):
+        return {
+            'left': index * 2 + 1,
+            'right': index * 2 + 2,
+        }
+
+    def add(self, element):
+        self.heap.append(element)
+        current_working_index = len(self.heap) - 1
+        while current_working_index > 0:
+            parent_index = self.get_parent_index(current_working_index)
+            if self.heap[parent_index] > self.heap[current_working_index]:
+                self.swap(parent_index, current_working_index)
+                current_working_index = parent_index
+            else:
+                break
+
+    def remove(self):
+        smallest_element = self.heap[0]
+        if len(self.heap) == 1:
+            self.heap = []
+            return smallest_element
+        last_element = self.heap.pop()
+        self.heap[0] = last_element
+        current_working_index = 0
+        while True:
+            child_indexes = self.get_child_indexes(current_working_index)
+            left_child = self.heap[child_indexes['left']] if child_indexes['left'] < len(self.heap) else None
+            right_child = self.heap[child_indexes['right']] if child_indexes['right'] < len(self.heap) else None
+            if left_child is None and right_child is None:
+                break
+            if left_child is not None and right_child is not None:
+                smallest_index = child_indexes['left'] if left_child < right_child else child_indexes['right']
+            elif left_child is not None:
+                smallest_index = child_indexes['left']
+            else:
+                smallest_index = child_indexes['right']
+            if self.heap[smallest_index] < self.heap[current_working_index]:
+                self.swap(smallest_index, current_working_index)
+                current_working_index = smallest_index
+            else:
+                break
+        return smallest_element
+
+
 class Solution:
     def smallestChair(self, times: List[List[int]], targetFriend: int) -> int:
-        import heapq
-        n = len(times)
-        
-        # We will store both arrival and leaving events in a single list
-        events = []
-        for i, (arrive, leave) in enumerate(times):
-            events.append((arrive, 'arrive', i))  # Arrival event
-            events.append((leave, 'leave', i))    # Leaving event
-        
-        # Sort events primarily by time; arrive before leave at the same time
-        events.sort(key=lambda x: (x[0], x[1] == 'leave'))
-        
-        # Min-heap for available chairs and dictionary to store occupied chairs
-        available_chairs = list(range(n))  # Initial chairs are 0 to n-1
-        heapq.heapify(available_chairs)
-        chair_taken = {}
-        
-        # Process each event
-        for time, event_type, friend in events:
-            if event_type == 'arrive':
-                # Assign the smallest available chair
-                chair = heapq.heappop(available_chairs)
-                chair_taken[friend] = chair
-                
-                # If it's the target friend, return the chair number
-                if friend == targetFriend:
-                    return chair
-            elif event_type == 'leave':
-                # Free the chair when the friend leaves
-                chair = chair_taken[friend]
-                heapq.heappush(available_chairs, chair)
+        incoming_time_vs_outgoing_time_mapping = {}
+        time_vs_chair_freeing = {}
+        min_heap = MinHeap()
+
+        for index in range(len(times)):
+            min_heap.add(index)
+
+        for index in range(len(times)):
+            incoming_time_vs_outgoing_time_mapping[times[index][0]] = times[index][1]
+
+        for index in range(max(incoming_time_vs_outgoing_time_mapping.keys()) + 1):
+            # Freeing up the chair, because next person may sit on this chair itself
+            if index in time_vs_chair_freeing:
+                for iterator in time_vs_chair_freeing[index]:
+                    min_heap.add(iterator)
+                time_vs_chair_freeing[index] = []
+
+            if index in incoming_time_vs_outgoing_time_mapping:
+                chair_available = min_heap.remove()
+                if index == times[targetFriend][0]:
+                    return chair_available
+
+                outgoing_time = incoming_time_vs_outgoing_time_mapping[index]
+                if outgoing_time not in time_vs_chair_freeing:
+                    time_vs_chair_freeing[outgoing_time] = []
+                time_vs_chair_freeing[outgoing_time].append(chair_available)
